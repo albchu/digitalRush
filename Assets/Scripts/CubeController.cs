@@ -8,8 +8,12 @@ public class CubeController : MonoBehaviour {
     public float spawnDistance = 75f;   // Units that the object will spawn at
     public float lightPadding = 1f;     // The offset that lights will spawn over the cube
     public GameObject cameraObject;
-    public float lightOrbitSpeed = 5f;
+    public float lightOrbitSpeed = 50f;
+    public float lightIntensity = 3f;
     public GameObject colliderObject;
+
+    GameObject lightA;
+    GameObject lightB;
     // Use this for initialization
     void Start () {
         BoxCollider boxCollider = colliderObject.GetComponent<BoxCollider>();
@@ -20,7 +24,17 @@ public class CubeController : MonoBehaviour {
 	void Update () {
 
         moveCube();
+        orbitLights();
+    }
 
+    /**
+     * Orbit lightA and lightB around each other
+     */ 
+    void orbitLights()
+    {
+        Vector3 halfPos = Vector3.Lerp(lightA.transform.position, lightB.transform.position, 0.5f);
+        lightA.transform.RotateAround(halfPos, Vector3.up, lightOrbitSpeed * Time.deltaTime);
+        lightB.transform.RotateAround(halfPos, Vector3.up, lightOrbitSpeed * Time.deltaTime);
     }
 
     void moveCube()
@@ -63,7 +77,7 @@ public class CubeController : MonoBehaviour {
         Vector3 lightPosB = this.gameObject.transform.position;
         Vector3 cubeDimensions = boxCollider.size;
         float lightOffsetY = cubeDimensions.y / 2 + lightPadding;
-        float lightOffsetX = cubeDimensions.x / 2 + lightPadding;
+        float lightOffsetX = cubeDimensions.x / 2 - lightPadding;
 
         lightPosA.y += lightOffsetY;
         lightPosB.y += lightOffsetY;
@@ -74,14 +88,16 @@ public class CubeController : MonoBehaviour {
         List<Color> colors = getGoldenRatioColors();
         Color colorA = colors[0];
         Color colorB = colors[1];
-        spawnLightAt(lightPosA, colorA, "OrbitLightA");
-        spawnLightAt(lightPosB, colorB, "OrbitLightB");
+        lightA = spawnLightAt(lightPosA, colorA, "OrbitLightA");
+        lightB = spawnLightAt(lightPosB, colorB, "OrbitLightB");
     }
 
     GameObject spawnLightAt(Vector3 spawnPosition, Color color, string lightName="someLight")
     {
         GameObject lightGameObject = new GameObject(lightName);
+        lightGameObject.transform.parent = this.gameObject.transform;
         Light lightComp = lightGameObject.AddComponent<Light>();
+        lightComp.intensity = lightIntensity;
         lightComp.color = color;
         lightGameObject.transform.position = spawnPosition;
         return lightGameObject;
