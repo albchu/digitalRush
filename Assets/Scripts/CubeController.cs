@@ -10,21 +10,25 @@ public class CubeController : MonoBehaviour {
     public GameObject cameraObject;
     public float lightOrbitSpeed = 50f;
     public float lightIntensity = 3f;
-    public GameObject colliderObject;
+    public float lightSpawnRadius = 2f;
 
+    // Y jitter
+    public float jitterBoundY = 0.5f;   // The max distance that the object can move away from its original Y position
+    public float jitterIncrementY = 0.01f;      // The number of incremental units that the object can translate during a jitter
+    float originalY;
     GameObject lightA;
     GameObject lightB;
     // Use this for initialization
-    void Start () {
-        BoxCollider boxCollider = colliderObject.GetComponent<BoxCollider>();
-        spawnLights(boxCollider);
+    void Awake () {
+        //spawnLights();
+        originalY = transform.position.y;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 
         moveCube();
-        orbitLights();
+        //orbitLights();
     }
 
     /**
@@ -39,13 +43,25 @@ public class CubeController : MonoBehaviour {
 
     void moveCube()
     {
-        this.gameObject.transform.position -= transform.forward * Time.deltaTime * movementSpeed;   // Move environment blocks
+        transform.position -= transform.forward * Time.deltaTime * movementSpeed;   // Move environment blocks towards camera
 
-        if (this.gameObject.transform.position.z < cameraObject.transform.position.z)   // If cube has passed the camera, reset to original position
+        // Vertical Jitter
+        if (transform.position.y > originalY + jitterBoundY)   // Object is above jitter boundary
         {
-            Vector3 spawnLocation = this.gameObject.transform.position;
+            jitterIncrementY *= -1; // Toggle jitter increment
+        }
+       else if (transform.position.y < originalY - jitterBoundY)   // Object is above jitter boundary
+        {
+            jitterIncrementY *= -1; // Toggle jitter increment
+        }
+        //float jitterSpeed = Vector3.Distance(transform.position, new Vector3(transform.position.x, originalY, transform.position.z)) + 1; // Value should be larger 
+        transform.position += Vector3.up * Time.deltaTime * jitterIncrementY;
+
+        if (transform.position.z < cameraObject.transform.position.z)   // If cube has passed the camera, reset to original position
+        {
+            Vector3 spawnLocation = transform.position;
             spawnLocation.z = cameraObject.transform.position.z + spawnDistance;
-            this.gameObject.transform.position = spawnLocation;
+            transform.position = spawnLocation;
         }
     }
 
@@ -71,31 +87,36 @@ public class CubeController : MonoBehaviour {
     /**
      * Spawns light objects on top side of box collider
      */
-    void spawnLights(BoxCollider boxCollider)
+    public void spawnLights(int numLights)
     {
-        Vector3 lightPosA = this.gameObject.transform.position;
-        Vector3 lightPosB = this.gameObject.transform.position;
-        Vector3 cubeDimensions = boxCollider.size;
-        float lightOffsetY = cubeDimensions.y / 2 + lightPadding;
-        float lightOffsetX = cubeDimensions.x / 2 - lightPadding;
+        Vector3 lightPosA = transform.position;
+        Vector3 lightPosB = transform.position;
+        Vector3 cubeDimensions = GetComponent<BoxCollider>().size;
+        float lightOffsetY = cubeDimensions.y * transform.localScale.y / 2 + lightPadding;
 
-        lightPosA.y += lightOffsetY;
-        lightPosB.y += lightOffsetY;
-
-        lightPosA.x += lightOffsetX;
-        lightPosB.x -= lightOffsetX;
-
-        List<Color> colors = getGoldenRatioColors();
-        Color colorA = colors[0];
-        Color colorB = colors[1];
-        lightA = spawnLightAt(lightPosA, colorA, "OrbitLightA");
-        lightB = spawnLightAt(lightPosB, colorB, "OrbitLightB");
+        List<Color> colors = getGoldenRatioColors(numLights);
+        // Base case: 1 light to spawn
+        if (numLights == 1)
+        {
+            spawnLightAt(new Vector3(transform.position.x, lightOffsetY, transform.position.z), colors[0]);
+        }
+        else
+        {
+            for (int i = 0; i < numLights; i++)
+            {
+                Color color = colors[i];
+                float xCoord = transform.position.x + lightSpawnRadius * Mathf.Cos(2 * Mathf.PI * i / numLights);
+                float ZCoord = transform.position.z + lightSpawnRadius * Mathf.Sin(2 * Mathf.PI * i / numLights);
+                spawnLightAt(new Vector3(xCoord, lightOffsetY, ZCoord), color, "Light " + i.ToString());
+            }
+        }
     }
 
-    GameObject spawnLightAt(Vector3 spawnPosition, Color color, string lightName="someLight")
+    GameObject spawnLightAt(Vector3 spawnPosition, Color color, string lightName="Light")
     {
         GameObject lightGameObject = new GameObject(lightName);
-        lightGameObject.transform.parent = this.gameObject.transform;
+        //GameObject lightGameObject = GameObject.CreatePrimitive(PrimitiveType.Cube);  // Here for debug to see where lights spawn
+        lightGameObject.transform.parent = transform;
         Light lightComp = lightGameObject.AddComponent<Light>();
         lightComp.intensity = lightIntensity;
         lightComp.color = color;
