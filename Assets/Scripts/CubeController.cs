@@ -11,6 +11,7 @@ public class CubeController : MonoBehaviour {
     public float lightOrbitSpeed = 50f;
     public float lightIntensity = 3f;
     public float lightSpawnRadius = 2f;
+    public bool hasRespawned = false;
 
     // Y jitter
     public float jitterMaxSpeed = 10f;
@@ -63,6 +64,7 @@ public class CubeController : MonoBehaviour {
         if (Vector3.Distance(originalPos, transform.position) > despawnDistance)   // If cube has passed the despawn threshold, reset to original position
         {
             transform.position = originalPos;
+            hasRespawned = true;
         }
     }
 
