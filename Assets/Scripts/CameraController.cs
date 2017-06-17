@@ -32,7 +32,7 @@ public class CameraController : MonoBehaviour
         rotX = Mathf.Clamp(rotX, -clampAngle, clampAngle);
 
         Quaternion localRotation = Quaternion.Euler(rotX, rotY, 0.0f);
-        //transform.rotation = localRotation;
-        transform.RotateAround(rotatePoint.position, Vector3.up, deltaY * Time.deltaTime);
+        transform.rotation = localRotation;
+        //transform.RotateAround(rotatePoint.position, Vector3.up, deltaY * Time.deltaTime);
     }
 }
