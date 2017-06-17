@@ -13,6 +13,7 @@ public class CubeController : MonoBehaviour {
     public float lightSpawnRadius = 2f;
 
     // Y jitter
+    public float jitterMaxSpeed = 10f;
     public float jitterBoundY = 0.5f;   // The max distance that the object can move away from its original Y position
     public float jitterIncrementY = 0.01f;      // The number of incremental units that the object can translate during a jitter
     float originalY;
@@ -46,16 +47,19 @@ public class CubeController : MonoBehaviour {
         transform.position -= transform.forward * Time.deltaTime * movementSpeed;   // Move environment blocks towards camera
 
         // Vertical Jitter
+        float jitterSpeed = Random.Range(1, jitterMaxSpeed);      // Random speed variable to make jitter more irratic;
         if (transform.position.y > originalY + jitterBoundY)   // Object is above jitter boundary
         {
             jitterIncrementY *= -1; // Toggle jitter increment
+            jitterSpeed = Random.Range(1, jitterMaxSpeed);      // Random speed variable to make jitter more irratic
         }
        else if (transform.position.y < originalY - jitterBoundY)   // Object is above jitter boundary
         {
             jitterIncrementY *= -1; // Toggle jitter increment
+            jitterSpeed = Random.Range(1, jitterMaxSpeed);      // Random speed variable to make jitter more irratic
         }
-        //float jitterSpeed = Vector3.Distance(transform.position, new Vector3(transform.position.x, originalY, transform.position.z)) + 1; // Value should be larger 
-        transform.position += Vector3.up * Time.deltaTime * jitterIncrementY;
+
+        transform.position += Vector3.up * Time.deltaTime * jitterIncrementY * jitterSpeed;
 
         if (transform.position.z < cameraObject.transform.position.z)   // If cube has passed the camera, reset to original position
         {
