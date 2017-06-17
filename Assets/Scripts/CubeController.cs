@@ -7,7 +7,7 @@ public class CubeController : MonoBehaviour {
     public float movementSpeed = 30f;    // All objects are moving in the z direction towards the camera
     public float spawnDistance = 75f;   // Units that the object will spawn at
     public float lightPadding = 1f;     // The offset that lights will spawn over the cube
-    public GameObject cameraObject;
+    public float despawnDistance = 30f;
     public float lightOrbitSpeed = 50f;
     public float lightIntensity = 3f;
     public float lightSpawnRadius = 2f;
@@ -16,13 +16,13 @@ public class CubeController : MonoBehaviour {
     public float jitterMaxSpeed = 10f;
     public float jitterBoundY = 0.5f;   // The max distance that the object can move away from its original Y position
     public float jitterIncrementY = 0.01f;      // The number of incremental units that the object can translate during a jitter
-    float originalY;
-    GameObject lightA;
-    GameObject lightB;
+    Vector3 originalPos;
+
     // Use this for initialization
     void Awake () {
         //spawnLights();
-        originalY = transform.position.y;
+
+        originalPos = transform.position;
 	}
 	
 	// Update is called once per frame
@@ -37,9 +37,9 @@ public class CubeController : MonoBehaviour {
      */ 
     void orbitLights()
     {
-        Vector3 halfPos = Vector3.Lerp(lightA.transform.position, lightB.transform.position, 0.5f);
-        lightA.transform.RotateAround(halfPos, Vector3.up, lightOrbitSpeed * Time.deltaTime);
-        lightB.transform.RotateAround(halfPos, Vector3.up, lightOrbitSpeed * Time.deltaTime);
+        //Vector3 halfPos = Vector3.Lerp(lightA.transform.position, lightB.transform.position, 0.5f);
+        //lightA.transform.RotateAround(halfPos, Vector3.up, lightOrbitSpeed * Time.deltaTime);
+        //lightB.transform.RotateAround(halfPos, Vector3.up, lightOrbitSpeed * Time.deltaTime);
     }
 
     void moveCube()
@@ -48,24 +48,21 @@ public class CubeController : MonoBehaviour {
 
         // Vertical Jitter
         float jitterSpeed = Random.Range(1, jitterMaxSpeed);      // Random speed variable to make jitter more irratic;
-        if (transform.position.y > originalY + jitterBoundY)   // Object is above jitter boundary
+        if (transform.position.y > originalPos.y + jitterBoundY)   // Object is above jitter boundary
         {
             jitterIncrementY *= -1; // Toggle jitter increment
             jitterSpeed = Random.Range(1, jitterMaxSpeed);      // Random speed variable to make jitter more irratic
         }
-       else if (transform.position.y < originalY - jitterBoundY)   // Object is above jitter boundary
+       else if (transform.position.y < originalPos.y - jitterBoundY)   // Object is above jitter boundary
         {
             jitterIncrementY *= -1; // Toggle jitter increment
             jitterSpeed = Random.Range(1, jitterMaxSpeed);      // Random speed variable to make jitter more irratic
         }
+        transform.position += Vector3.up * Time.deltaTime * jitterIncrementY * jitterSpeed; // Vertical jitter movement
 
-        transform.position += Vector3.up * Time.deltaTime * jitterIncrementY * jitterSpeed;
-
-        if (transform.position.z < cameraObject.transform.position.z)   // If cube has passed the camera, reset to original position
+        if (Vector3.Distance(originalPos, transform.position) > despawnDistance)   // If cube has passed the despawn threshold, reset to original position
         {
-            Vector3 spawnLocation = transform.position;
-            spawnLocation.z = cameraObject.transform.position.z + spawnDistance;
-            transform.position = spawnLocation;
+            transform.position = originalPos;
         }
     }
 
