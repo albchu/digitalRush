@@ -18,8 +18,13 @@ public class PlayerController : MonoBehaviour {
 
     void Update()
     {
+        movement();
+    }
+
+    void movement()
+    {
         float dashModifier = 1f;        // Init if space not pushed
-        if (Input.GetKey(KeyCode.Space) && Time.time > nextDashTime) 
+        if (Input.GetKey(KeyCode.Space) && Time.time > nextDashTime)
         {
             pressedDashTime += Time.deltaTime;
             dashModifier = dashSpeed;
@@ -32,6 +37,7 @@ public class PlayerController : MonoBehaviour {
             nextDashTime = Time.time + dashRestSeconds;
             //print("Current time is: " + Time.time + ". Next dash time at " + nextDashTime);
         }
+
         if (Input.GetKey(KeyCode.W))    // Forward
         {
             transform.position += transform.up * Time.deltaTime * movementSpeed * dashModifier;
@@ -50,9 +56,6 @@ public class PlayerController : MonoBehaviour {
             Vector3 right_angle = Vector3.Cross(transform.forward, Vector3.up);
             transform.position += right_angle * Time.deltaTime * movementSpeed * dashModifier;
         }
-        
-
-
     }
 
 }

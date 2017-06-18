@@ -5,6 +5,9 @@ using System.Collections;
 
 public class RayGun : MonoBehaviour
 {
+    public Transform rayRenderOrigin;
+    public Transform rayTargetOrigin;
+
     Vector2 mouse;
     RaycastHit hit;
     float range = 100.0f;
@@ -21,18 +24,20 @@ public class RayGun : MonoBehaviour
 
     void Update()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out hit, range))
+        if (Input.GetMouseButton(0))
         {
-            if (Input.GetMouseButton(0))
+            Vector3 fwd = rayTargetOrigin.transform.TransformDirection(Vector3.forward);
+            Debug.DrawRay(rayTargetOrigin.transform.position, fwd * 50, Color.green);
+            // Shoot raycast
+            if (Physics.Raycast(rayTargetOrigin.position, rayTargetOrigin.forward, out hit, 50))
             {
-                line.enabled = true;
-                line.SetPosition(0, transform.position);
+                //Debug.Log("Raycast hitted to: " + objectHit.collider);
+                //targetEnemy = hit.collider.gameObject;
                 line.SetPosition(1, hit.point + hit.normal);
-            }
-            else
-                line.enabled = false;
-        }
 
+            }
+            line.enabled = true;
+            line.SetPosition(0, rayRenderOrigin.position);
+        }
     }
 }
