@@ -11,23 +11,23 @@ public class PlayerController : MonoBehaviour {
     public float dashRestSeconds = 2f;
     public float dashPressedMaxTime = 0.1f;
     public float rotationRestoreSeconds = 0.5f;     // Time until ship returns to original position after a rotation
-    public float rotationMax = 50f;      // This is the boundary value for how far the ship can rotate when it goes to the left and right
+    public float maxRotateDegrees = 50f;      // This is the boundary value for how far the ship can rotate when it goes to the left and right
+    public float rotationIncrements = 5f;
+    public Transform playerCamera; 
 
-    private float leftRotationAmount;
-    private float rightRotationAmount;
     private float nextDashTime = 0f;
     private float pressedDashTime = 0f;
     private float rotationStartTime;
     private bool restoringRotation;       // This value is for whether the restoration process (which can be disrupted) should occur
     private bool atRestingRotation;       // This value is only for whether the rotation has been completely restored
     private Quaternion originalRotation;
+
     void Start()
     {
-        leftRotationAmount = rotationMax;
-        rightRotationAmount = -rotationMax;
         restoringRotation = false;
         atRestingRotation = true;
         originalRotation = transform.rotation;
+
     }
 
     void Update()
@@ -52,71 +52,68 @@ public class PlayerController : MonoBehaviour {
             //print("Current time is: " + Time.time + ". Next dash time at " + nextDashTime);
         }
 
+        Vector3 movementDuringFrame = new Vector3(0,0,0);
         if (Input.GetKey(KeyCode.W))    // Forward
         {
-            transform.position += transform.up * Time.deltaTime * movementSpeed * dashModifier;
+            movementDuringFrame = transform.up * Time.deltaTime * movementSpeed * dashModifier;
+            
         }
-        else if (Input.GetKey(KeyCode.S))   //Back
+        if (Input.GetKey(KeyCode.S))   //Back
         {
-            transform.position -= transform.up * Time.deltaTime * movementSpeed * dashModifier;
+            movementDuringFrame -= transform.up * Time.deltaTime * movementSpeed * dashModifier;
         }
-        else if (Input.GetKey(KeyCode.D))   // Right
-        {
-            Vector3 right_angle = Vector3.Cross(transform.forward, Vector3.up);
-            transform.position -= right_angle * Time.deltaTime * movementSpeed * dashModifier;
-
-            // Rotation logic
-            atRestingRotation = false;
-            restoringRotation = false;      // Disable restore so that it does not conflict with this movement
-            transform.RotateAround(transform.position, Vector3.forward, rightRotationAmount * Time.deltaTime);
-            if (rightRotationAmount < 0)
-            {
-                rightRotationAmount++;
-            }
-        }
-        else if (Input.GetKey(KeyCode.A))   // Left
+        if (Input.GetKey(KeyCode.D))   // Right
         {
             Vector3 right_angle = Vector3.Cross(transform.forward, Vector3.up);
-            transform.position += right_angle * Time.deltaTime * movementSpeed * dashModifier;
+            movementDuringFrame -= right_angle * Time.deltaTime * movementSpeed * dashModifier;
 
             // Rotation logic
+            if (Input.GetKeyDown(KeyCode.D) && atRestingRotation)
+            {
+                //print("recorded original rotation going right");
+                originalRotation = transform.rotation;  // Save the original rotation
+                rotationStartTime = Time.time;
+            }
+
             atRestingRotation = false;
             restoringRotation = false;      // Disable restore so that it does not conflict with this movement
-            transform.RotateAround(transform.position, Vector3.forward, leftRotationAmount * Time.deltaTime);
-            if (leftRotationAmount > 0)
-            {
-                leftRotationAmount--;
-            }
+            float rotateBudget = (transform.eulerAngles.z + maxRotateDegrees) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
+            bool canStillRotate = Mathf.Clamp(rotateBudget, 0, 10) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
+            if (canStillRotate)     // Rotation clamping
+                transform.RotateAround(transform.position, Vector3.forward, -rotationIncrements * Time.deltaTime);
         }
-
-        // Rotations while going left
-        if (Input.GetKeyDown(KeyCode.A) && atRestingRotation)
+        if (Input.GetKey(KeyCode.A))   // Left
         {
-            originalRotation = transform.rotation;  // Save the original rotation
-            rotationStartTime = Time.time;
-            print("recorded original rotation");
+            Vector3 right_angle = Vector3.Cross(transform.forward, Vector3.up);
+            movementDuringFrame += right_angle * Time.deltaTime * movementSpeed * dashModifier;
+
+            // Rotation logic
+            if (Input.GetKeyDown(KeyCode.A) && atRestingRotation)
+            {
+                //print("recorded original rotation going left");
+                originalRotation = transform.rotation;  // Save the original rotation
+                rotationStartTime = Time.time;
+            }
+            atRestingRotation = false;
+            restoringRotation = false;      // Disable restore so that it does not conflict with this movement
+            float rotateBudget = (transform.eulerAngles.z + maxRotateDegrees) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
+            bool canStillRotate = Mathf.Clamp(rotateBudget, maxRotateDegrees * 2 - 10, maxRotateDegrees*2) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
+            if (canStillRotate)     // Rotation clamping
+                transform.RotateAround(transform.position, Vector3.forward, rotationIncrements * Time.deltaTime);
         }
-        
+        playerCamera.position += movementDuringFrame; // Move the camera the same as the player
+        transform.position += movementDuringFrame;      // Move the player
+
         if (Input.GetKeyUp(KeyCode.A))
         {
             //print("Begin restoring rotation");
-            restoringRotation = true;   // Start restoring process
-            leftRotationAmount = rotationMax;
-        }
-
-        // Rotations while going right
-        if (Input.GetKeyDown(KeyCode.D) && atRestingRotation)
-        {
-            originalRotation = transform.rotation;  // Save the original rotation
-            rotationStartTime = Time.time;
-            //print("recorded original rotation");
+            restoringRotation = true;   // Start restoring processa
         }
 
         if (Input.GetKeyUp(KeyCode.D))
         {
             //print("Begin restoring rotation");
             restoringRotation = true;   // Start restoring process
-            rightRotationAmount = -rotationMax;
         }
 
         if (restoringRotation)
@@ -126,7 +123,7 @@ public class PlayerController : MonoBehaviour {
             transform.rotation = Quaternion.Slerp(transform.rotation, originalRotation, percentageComplete);
             if (percentageComplete >= 1f || originalRotation == transform.rotation)
             {
-                //print("Restored original rotation!");
+                print("Restored original rotation!");
                 restoringRotation = false;
                 atRestingRotation = true;
             }
