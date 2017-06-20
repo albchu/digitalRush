@@ -12,17 +12,28 @@ public class CubeController : MonoBehaviour {
     public float lightIntensity = 3f;
     public float lightSpawnRadius = 2f;
     public bool hasRespawned = false;
-
+    public string lightOrientation = "top";
+    public List<GameObject> lights;
     // Y jitter
     public float jitterMaxSpeed = 10f;
     public float jitterBoundY = 0.5f;   // The max distance that the object can move away from its original Y position
     public float jitterIncrementY = 0.01f;      // The number of incremental units that the object can translate during a jitter
     Vector3 originalPos;
 
-    // Use this for initialization
-    void Awake () {
-        //spawnLights();
+    public enum Orientation
+    {
+        Top,
+        Bottom,
+        Left,
+        Right,
+        Front,
+        Back
+    };
 
+    // Use this for initialization
+    void Start () {
+        lights = new List<GameObject>();
+        //spawnLights(4, (Orientation)System.Enum.Parse(typeof(Orientation), lightOrientation, true));
         originalPos = transform.position;
 	}
 	
@@ -89,8 +100,87 @@ public class CubeController : MonoBehaviour {
 
     /**
      * Spawns light objects on top side of box collider
+     * side = the side of the cube that will have the lights
      */
-    public void spawnLights(int numLights)
+    public void spawnLights(int numLights, Orientation side)
+    {
+        Vector3 cubeDimensions = GetComponent<BoxCollider>().size;
+        List<Color> colors = getGoldenRatioColors(numLights);
+        Vector3 centerPos = transform.position; // Initialize value
+        float perpPoint1 = 0f;
+        float perpPoint2 = 0f;
+        float perpPoint3 = 0f;
+        if (side == Orientation.Top)
+        {
+            centerPos.y += cubeDimensions.y * transform.localScale.y / 2 + lightPadding;
+            perpPoint1 = centerPos.x;
+            perpPoint2 = centerPos.z;
+            perpPoint3 = centerPos.y;
+        }
+        else if (side == Orientation.Bottom)
+        {
+            centerPos.y -= cubeDimensions.y * transform.localScale.y / 2 + lightPadding;
+            perpPoint1 = centerPos.x;
+            perpPoint2 = centerPos.z;
+            perpPoint3 = centerPos.y;
+        }
+        else if (side == Orientation.Right)
+        {
+            centerPos.x += cubeDimensions.x * transform.localScale.x / 2 + lightPadding;
+            perpPoint1 = centerPos.y;
+            perpPoint2 = centerPos.z;
+            perpPoint3 = centerPos.x;
+        }
+        else if (side == Orientation.Left)
+        {
+            centerPos.x -= cubeDimensions.x * transform.localScale.x / 2 + lightPadding;
+            perpPoint1 = centerPos.y;
+            perpPoint2 = centerPos.z;
+            perpPoint3 = centerPos.x;
+        }
+        else if (side == Orientation.Back)
+        {
+            centerPos.z += cubeDimensions.z * transform.localScale.z / 2 + lightPadding;
+            perpPoint1 = centerPos.y;
+            perpPoint2 = centerPos.x;
+            perpPoint3 = centerPos.z;
+        }
+        else if (side == Orientation.Front)
+        {
+            centerPos.z -= cubeDimensions.z * transform.localScale.z / 2 + lightPadding;
+            perpPoint1 = centerPos.y;
+            perpPoint2 = centerPos.x;
+        }
+        else
+        {
+            print("No valid orientation given. Spawning no lights");
+            return;
+        }
+
+        // Base case: 1 light to spawn
+        if (numLights == 1)
+        {
+            lights.Add(spawnLightAt(centerPos, colors[0]));
+        }
+        else
+        {
+            for (int i = 0; i < numLights; i++)
+            {
+                Color color = colors[i];
+                float pointA = perpPoint1 + lightSpawnRadius * Mathf.Cos(2 * Mathf.PI * i / numLights);
+                float pointB = perpPoint2 + lightSpawnRadius * Mathf.Sin(2 * Mathf.PI * i / numLights);
+
+                if (side == Orientation.Top || side == Orientation.Bottom)
+                    lights.Add(spawnLightAt(new Vector3(pointA, centerPos.y, pointB), color, "Light " + i.ToString()));
+                else if (side == Orientation.Right || side == Orientation.Left)
+                    lights.Add(spawnLightAt(new Vector3(centerPos.x, pointA, pointB), color, "Light " + i.ToString()));
+                else if (side == Orientation.Front ||side == Orientation.Back)
+                    lights.Add(spawnLightAt(new Vector3(pointB, pointA, centerPos.z), color, "Light " + i.ToString()));
+            }
+        }
+    }
+
+    public void spawnLights(int numLights)        // DEPRECATED. Use function with orientation
     {
         Vector3 lightPosA = transform.position;
         Vector3 lightPosB = transform.position;

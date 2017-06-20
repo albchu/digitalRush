@@ -29,7 +29,7 @@ public class DataCoreController : MonoBehaviour {
             nextSpawnDistance = prefabToSpawn.GetComponent<BoxCollider>().size.z + distanceBetweenSpawns;
             lastSpawn = Instantiate(prefabToSpawn, transform.position, Quaternion.identity) as GameObject;
             CubeController cubeController = lastSpawn.GetComponent<CubeController>();
-            cubeController.spawnLights(numLightsPerCube);
+            //cubeController.spawnLights(numLightsPerCube);
             cubeController.despawnDistance = spawnUntilDistance;
             launchedPrefabs.Add(lastSpawn);
             numSent++;
