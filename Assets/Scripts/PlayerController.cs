@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour {
     public float dashPressedMaxTime = 0.1f;
     public float rotationRestoreSeconds = 0.5f;     // Time until ship returns to original position after a rotation
     public float maxRotateDegrees = 50f;      // This is the boundary value for how far the ship can rotate when it goes to the left and right
-    public float rotationIncrements = 5f;
+    public float rotationIncrements = 50f;
     public Transform playerCamera; 
 
     private float nextDashTime = 0f;
@@ -103,7 +103,6 @@ public class PlayerController : MonoBehaviour {
         }
         playerCamera.position += movementDuringFrame; // Move the camera the same as the player
         transform.position += movementDuringFrame;      // Move the player
-
         if (Input.GetKeyUp(KeyCode.A))
         {
             //print("Begin restoring rotation");
@@ -123,7 +122,7 @@ public class PlayerController : MonoBehaviour {
             transform.rotation = Quaternion.Slerp(transform.rotation, originalRotation, percentageComplete);
             if (percentageComplete >= 1f || originalRotation == transform.rotation)
             {
-                print("Restored original rotation!");
+                //print("Restored original rotation!");
                 restoringRotation = false;
                 atRestingRotation = true;
             }

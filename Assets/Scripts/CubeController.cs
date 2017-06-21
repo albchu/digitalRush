@@ -14,11 +14,12 @@ public class CubeController : MonoBehaviour {
     public bool hasRespawned = false;
     public string lightOrientation = "top";
     public List<GameObject> lights;
+    public bool enableRespawn = true;
     // Y jitter
     public float jitterMaxSpeed = 10f;
     public float jitterBoundY = 0.5f;   // The max distance that the object can move away from its original Y position
     public float jitterIncrementY = 0.01f;      // The number of incremental units that the object can translate during a jitter
-    Vector3 originalPos;
+    public Vector3 originalPos;
 
     public enum Orientation
     {
@@ -72,10 +73,15 @@ public class CubeController : MonoBehaviour {
         }
         transform.position += Vector3.up * Time.deltaTime * jitterIncrementY * jitterSpeed; // Vertical jitter movement
 
-        if (Vector3.Distance(originalPos, transform.position) > despawnDistance)   // If cube has passed the despawn threshold, reset to original position
+        if (enableRespawn && Vector3.Distance(originalPos, transform.position) > despawnDistance)   // If cube has passed the despawn threshold, reset to original position
         {
             transform.position = originalPos;
             hasRespawned = true;
+      print("I HAVE RESPAWNED!");
+        }
+        else if (!enableRespawn)
+        {
+            this.gameObject.SetActive(enableRespawn);
         }
     }
 

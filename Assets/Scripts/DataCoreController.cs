@@ -27,6 +27,7 @@ public class DataCoreController : MonoBehaviour {
     private Vector3 cubeDimensions;
     private Vector3 halfCubeDimensions;
     private int numSlicesGenerated;
+    private float despawnDistance;
 
     // Use this for initialization
     void Start()
@@ -51,26 +52,11 @@ public class DataCoreController : MonoBehaviour {
 
         cubeDimensions = cubePool.Peek().getCubeDimensions();   // Use first cube as template of dimensions for all other cubes. Respect this assumption.
         halfCubeDimensions = cubeDimensions/2;   // We use this value a lot. Just saving it for performance optimization
-    }
-	
-	void Update () {
-        //bool readyForNextSpawn = (lastSpawn == null || Vector3.Distance(transform.position, lastSpawn.transform.position) > nextSpawnDistance);
-        //bool hasFirstPrefabHasRespawned = (launchedPrefabs.Count == 0) ? false : launchedPrefabs[0].GetComponent<CubeController>().hasRespawned;
-        //if (readyForNextSpawn && !hasFirstPrefabHasRespawned)
-        //{
-        //    print("Sending Object!");
-        //    nextSpawnDistance = prefabToSpawn.GetComponent<BoxCollider>().size.z + distanceBetweenSpawns;
-        //    lastSpawn = Instantiate(prefabToSpawn, transform.position, Quaternion.identity) as GameObject;
-        //    CubeController cubeController = lastSpawn.GetComponent<CubeController>();
-        //    //cubeController.spawnLights(numLightsPerCube);
-        //    cubeController.despawnDistance = spawnUntilDistance;
-        //    launchedPrefabs.Add(lastSpawn);
-        //    numSent++;
-        //    print("Sending next object at " + nextSpawnDistance);
-        //print("First element has traveled " + Vector3.Distance(launchedPrefabs[0].transform.position, transform.position));
-        //}
+        despawnDistance = (mapLength + lengthPadding) * cubeDimensions.z;
+    print("Despawn distance is " + despawnDistance);
+  }
 
-
+  void Update () {
 
         if (numSlicesGenerated < mapLength)
         {
@@ -81,6 +67,7 @@ public class DataCoreController : MonoBehaviour {
                 map[numSlicesGenerated] = spawnSlice(mapWidth, mapHeight);
                 numSlicesGenerated++;
             }
+            print("Current number of slices generated" + numSlicesGenerated);
 
         }
 
@@ -102,7 +89,7 @@ public class DataCoreController : MonoBehaviour {
                 position.z = transform.position.z;
 
                 CubeNode cube = cubePool.Pop();
-                cube.initializeAt(position);
+                cube.initializeAt(position, despawnDistance);
                 lastCube = cube;
                 slice[row, column] = cube;
                 //print("initialized cube at row " + row + " and column " + column);
@@ -128,11 +115,13 @@ public class DataCoreController : MonoBehaviour {
         /**
          * Initializes the cube at row and column of the current gameObject's z position
          */
-        public void initializeAt(Vector3 pos)
+        public void initializeAt(Vector3 pos, float despawnDistance)
         {
             cubeObj.transform.position = pos;
             renderCube();
-            cubeController.movementSpeed = 2f;   // Debug, i dont wanna see it move until we're ready
+            cubeController.movementSpeed = 10f;   // Debug, i dont wanna see it move until we're ready
+            cubeController.despawnDistance = despawnDistance;
+            cubeController.originalPos = pos; // We want it to respawn at this location and not where it was initalized in the pool
         }
 
         public Vector3 getPosition()
@@ -145,7 +134,7 @@ public class DataCoreController : MonoBehaviour {
          */
         public void renderCube(float chancePercentage=1f)
         {
-            print("There is a " + chancePercentage + " that this cube will render");
+            //print("There is a " + (chancePercentage * 100) + "% chance that this cube will render");
             chancePercentage = Mathf.Clamp(chancePercentage, 0, 1); // Incase someone is being a dumb bum
             if (Random.value > 1f - chancePercentage)   // Calculating the chance in reverse. ie: if chance percentage is .8, then the random value must be between 0 and 0.2 aka 1 - 0.8
             {
