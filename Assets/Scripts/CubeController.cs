@@ -4,17 +4,17 @@ using UnityEngine;
 
 public class CubeController : MonoBehaviour {
 
-    public float movementSpeed = 30f;    // All objects are moving in the z direction towards the camera
+    //public float movementSpeed = 30f;    // All objects are moving in the z direction towards the camera
     public float spawnDistance = 75f;   // Units that the object will spawn at
     public float lightPadding = 1f;     // The offset that lights will spawn over the cube
-    public float despawnDistance = 30f;
+    //public float despawnDistance = 30f;
     public float lightOrbitSpeed = 50f;
     public float lightIntensity = 3f;
     public float lightSpawnRadius = 2f;
-    public bool hasRespawned = false;
+    //public bool hasRespawned = false;
     public string lightOrientation = "top";
     public List<GameObject> lights;
-    public bool enableRespawn = true;
+    //public bool enableRespawn = true;
     // Y jitter
     public float jitterMaxSpeed = 10f;
     public float jitterBoundY = 0.5f;   // The max distance that the object can move away from its original Y position
@@ -41,7 +41,7 @@ public class CubeController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-        moveCube();
+        //moveCube();
         //orbitLights();
     }
 
@@ -55,9 +55,9 @@ public class CubeController : MonoBehaviour {
         //lightB.transform.RotateAround(halfPos, Vector3.up, lightOrbitSpeed * Time.deltaTime);
     }
 
-    void moveCube()
+    public void moveCube(float increment)
     {
-        transform.position -= transform.forward * Time.deltaTime * movementSpeed;   // Move environment blocks towards camera
+        transform.position -= transform.forward * Time.deltaTime * increment;   // Move environment blocks towards camera
 
         // Vertical Jitter
         float jitterSpeed = Random.Range(1, jitterMaxSpeed);      // Random speed variable to make jitter more irratic;
@@ -73,16 +73,16 @@ public class CubeController : MonoBehaviour {
         }
         transform.position += Vector3.up * Time.deltaTime * jitterIncrementY * jitterSpeed; // Vertical jitter movement
 
-        if (enableRespawn && Vector3.Distance(originalPos, transform.position) > despawnDistance)   // If cube has passed the despawn threshold, reset to original position
-        {
-            transform.position = originalPos;
-            hasRespawned = true;
-      print("I HAVE RESPAWNED!");
-        }
-        else if (!enableRespawn)
-        {
-            this.gameObject.SetActive(enableRespawn);
-        }
+      //  if (enableRespawn && Vector3.Distance(originalPos, transform.position) > despawnDistance)   // If cube has passed the despawn threshold, reset to original position
+      //  {
+      //      transform.position = originalPos;
+      //      hasRespawned = true;
+      //print("I HAVE RESPAWNED!");
+      //  }
+      //  else if (!enableRespawn)
+      //  {
+      //      this.gameObject.SetActive(enableRespawn);
+      //  }
     }
 
     /**
