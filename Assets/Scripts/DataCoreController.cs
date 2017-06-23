@@ -34,7 +34,8 @@ public class DataCoreController : MonoBehaviour {
     private int numSlicesGenerated;
     private float despawnDistance;
     private float lengthThreshold;    // The distance that the last slice must have traveled before we generate a new slice
-
+    private float preCalcOffsetX;
+    private float preCalcOffsetY;
     // Use this for initialization
     void Start()
     {
@@ -62,6 +63,10 @@ public class DataCoreController : MonoBehaviour {
         halfCubeDimensions = cubeDimensions/2;   // We use this value a lot. Just saving it for performance optimization
         lengthThreshold = cubeDimensions.z + lengthPadding;   // The distance that the last slice must have traveled before we generate a new slice
 
+        // Performance Hack: These calculations are used in spawning new slices. They're the same in each iteration and dont need to be repeated.
+        preCalcOffsetX = transform.position.x * ((float)mapWidth * halfCubeDimensions.x);
+        preCalcOffsetY = transform.position.y * ((float)mapHeight * halfCubeDimensions.y);
+
         despawnDistance = (mapLength + lengthPadding) * cubeDimensions.z;
         print("Despawn distance is " + despawnDistance);
     }
@@ -71,31 +76,27 @@ public class DataCoreController : MonoBehaviour {
         if (readyForNextSlice())
         {
             CubeNode[,] slice = generateSliceAtBegining();
-            applyBehaviorFilter(slice, mapWidth, mapHeight);
+            applyBehaviorFilter(slice);
         }
 
         despawnSlices();
         moveSlices();
     }
 
-    private void applyBehaviorFilter(CubeNode[,] slice, int width, int height)
+    private void applyBehaviorFilter(CubeNode[,] slice)
     {
-        // For now just do the one plain one. Im tired, just want something dirty to see if it even works.
-        for (int row = 0; row < width; row++)
-        {
-            for (int column = 0; column < height; column++)
-            {
-                CubeNode node = slice[row, column];
+        mapOverSlice(slice, plainLevel);        // Eventually we will shuffle between different behavioral filters that have different chances of coming up
+    }
 
-                if (row == 0 || row == width-1 || column == 0 || column == height - 1)
-                {
-                    node.spawn();
-                }
-                else
-                {
-                    node.despawn();
-                }
-            }
+    private void plainLevel(CubeNode node, int rowIndex, int columnIndex)
+    {
+        if (rowIndex == 0 || rowIndex == mapWidth - 1 || columnIndex == 0 || columnIndex == mapHeight - 1)
+        {
+            node.spawn();
+        }
+        else
+        {
+            node.despawn();
         }
     }
 
@@ -112,7 +113,7 @@ public class DataCoreController : MonoBehaviour {
         CubeNode[,] newSlice = null;
         if (numSlicesGenerated < mapLength + numPaddingSlices)
         {
-            newSlice = spawnSlice(mapWidth, mapHeight);
+            newSlice = spawnSlice();
             activeSlices.Add(newSlice);
             numSlicesGenerated++;
         }
@@ -121,7 +122,7 @@ public class DataCoreController : MonoBehaviour {
             print("Spawning from dormant slices");
             newSlice = dormantSlices.Dequeue();
             activeSlices.Add(newSlice);
-            initializeSlice(newSlice, mapWidth, mapHeight);
+            initializeSlice(newSlice);
         }
         else
         {
@@ -140,7 +141,7 @@ public class DataCoreController : MonoBehaviour {
             bool reachedDespawnThreshold = cubeFromFirstSlice.getDistanceFrom(transform.position).z >= despawnDistance;
             if (reachedDespawnThreshold)
             {
-                despawnSlice(lastSlice, mapWidth, mapHeight);
+                despawnSlice(lastSlice);
                 activeSlices.RemoveAt(0);
                 dormantSlices.Enqueue(lastSlice);
                 print("Despawning slice! We now have " + dormantSlices.Count + " dormant slices");
@@ -151,14 +152,14 @@ public class DataCoreController : MonoBehaviour {
     /**
     * A generic function that iterates over a slice and runs a void callback on each of the cubeNodes 
     */
-    private void mapOverSlice(CubeNode[,] slice, int width, int height, System.Action<CubeNode> callback)
+    private void mapOverSlice(CubeNode[,] slice, System.Action<CubeNode, int, int> callback)
     {
-        for (int row = 0; row < width; row++)
+        for (int row = 0; row < mapWidth; row++)
         {
-            for (int column = 0; column < height; column++)
+            for (int column = 0; column < mapHeight; column++)
             {
                 CubeNode node = slice[row, column];
-                callback(node);
+                callback(node, row, column);
             }
         }
     }
@@ -171,23 +172,23 @@ public class DataCoreController : MonoBehaviour {
         for (int i = 0; i < activeSlices.Count; i++)
         {
             CubeNode[,] slice = activeSlices[i];
-            moveSlice(slice, mapWidth, mapHeight);
+            moveSlice(slice);
         }
     }
 
     /**
      * Generates a 2d list by [width][height] of cubenodes
      */
-    private CubeNode[,] spawnSlice(int width, int height)
+    private CubeNode[,] spawnSlice()
     {
-        CubeNode[,] slice = new CubeNode[width, height];
-        for (int row = 0; row < width; row++)
+        CubeNode[,] slice = new CubeNode[mapWidth, mapHeight];
+        for (int row = 0; row < mapWidth; row++)
         {
-            for (int column = 0; column < height; column++)
+            for (int column = 0; column < mapHeight; column++)
             {
                 Vector3 position = new Vector3();
-                position.x = transform.position.x * ((float)mapWidth * halfCubeDimensions.x) + row * cubeDimensions.x + widthPadding * row;
-                position.y = transform.position.y * ((float)mapHeight * halfCubeDimensions.y) + column * cubeDimensions.y + heightPadding * column;
+                position.x = preCalcOffsetX + row * cubeDimensions.x + widthPadding * row;
+                position.y = preCalcOffsetY + column * cubeDimensions.y + heightPadding * column;
                 position.z = transform.position.z;
 
                 CubeNode cube = cubePool.Pop();
@@ -205,34 +206,34 @@ public class DataCoreController : MonoBehaviour {
     /**
     * Moves the slice forward by the movementSpeed
     */
-    private void moveSlice(CubeNode[,] slice, int width, int height)
+    private void moveSlice(CubeNode[,] slice)
     {
-        mapOverSlice(slice, width, height, moveNode);
+        mapOverSlice(slice, moveNode);
     }
 
-    private void despawnSlice(CubeNode[,] slice, int width, int height)
+    private void despawnSlice(CubeNode[,] slice)
     {
-        mapOverSlice(slice, width, height, despawnNode);
+        mapOverSlice(slice, despawnNode);
     }
 
-    private void initializeSlice(CubeNode[,] slice, int width, int height)
+    private void initializeSlice(CubeNode[,] slice)
     {
-        mapOverSlice(slice, width, height, initializeNode);
+        mapOverSlice(slice, initializeNode);
     }
 
     /****** NODE MAP FUNCTIONS ******/
 
-    private void initializeNode(CubeNode node)
+    private void initializeNode(CubeNode node, int rowIndex, int columnIndex)
     {
         node.reinitialize();
     }
 
-    private void moveNode(CubeNode node)
+    private void moveNode(CubeNode node, int rowIndex, int columnIndex)
     {
         node.getController().moveCube(movementSpeed);
     }
 
-    private void despawnNode(CubeNode node)
+    private void despawnNode(CubeNode node, int rowIndex, int columnIndex)
     {
         node.despawn();
     }
