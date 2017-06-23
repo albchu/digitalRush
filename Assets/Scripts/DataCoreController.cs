@@ -19,18 +19,21 @@ public class DataCoreController : MonoBehaviour {
     public float movementSpeed = 5f;
     public bool respawnSlices = false;
 
+    // If we only generate mapLength amount of new slices before starting to pop dormant slices, there wont be any to pop. 
+    // This padding ensures that we always have some extra dormant slices to use when we need them
+    public int numPaddingSlices = 2;
+
     private int numSent = 0;
-    private CubeNode lastCube;
     private float nextSpawnDistance;
     private float firstPrefabMaxDistance = 0;
-    //private CubeNode[][,] map;
     private List<CubeNode[,]> activeSlices;
+    private Queue<CubeNode[,]> dormantSlices;
     private Stack<CubeNode> cubePool;
-    //private bool doneSpawning;
     private Vector3 cubeDimensions;
     private Vector3 halfCubeDimensions;
     private int numSlicesGenerated;
     private float despawnDistance;
+    private float lengthThreshold;    // The distance that the last slice must have traveled before we generate a new slice
 
     // Use this for initialization
     void Start()
@@ -42,8 +45,9 @@ public class DataCoreController : MonoBehaviour {
         launchedPrefabs = new List<GameObject>();
         //map = new CubeNode[mapLength][,];
         activeSlices = new List<CubeNode[,]>();
+        dormantSlices = new Queue<CubeNode[,]>();
         // Only generate a pool of cubes enough to fill the screen up to the player's distance. Theres no way ever that we will fill the screen with more blocks than that
-        float totalCubesNeeded = mapWidth * mapHeight * mapLength;
+        float totalCubesNeeded = mapWidth * mapHeight * mapLength * numPaddingSlices;
         cubePool = new Stack<CubeNode>();
         print("To fill a space that is " + mapWidth + " by " + mapHeight + " by " + mapLength + " , we need to generate " + totalCubesNeeded + " cubes");
         float timeStarted = Time.time;
@@ -56,6 +60,8 @@ public class DataCoreController : MonoBehaviour {
 
         cubeDimensions = cubePool.Peek().getCubeDimensions();   // Use first cube as template of dimensions for all other cubes. Respect this assumption.
         halfCubeDimensions = cubeDimensions/2;   // We use this value a lot. Just saving it for performance optimization
+        lengthThreshold = cubeDimensions.z + lengthPadding;   // The distance that the last slice must have traveled before we generate a new slice
+
         despawnDistance = (mapLength + lengthPadding) * cubeDimensions.z;
         print("Despawn distance is " + despawnDistance);
     }
@@ -67,30 +73,42 @@ public class DataCoreController : MonoBehaviour {
         moveSlices();
     }
 
+    /**
+    * Returns the z distance from the last generated slice and the this controller's position
+    */
+    private bool readyForNextSlice()
+    {
+        return (activeSlices.Count == 0) || (activeSlices[activeSlices.Count - 1][0, 0].getDistanceFrom(transform.position).z >= lengthThreshold);
+    }
 
     private CubeNode[,] generateSliceAtBegining()
     {
         CubeNode[,] newSlice = null;
-        if (numSlicesGenerated < mapLength)
+        if (numSlicesGenerated < mapLength + numPaddingSlices)
         {
             // Figure out whether it's time to spawn another one
-            float lengthThreshold = cubeDimensions.z + lengthPadding;
-            if (lastCube == null || (transform.position.z - lastCube.getPosition().z) >= lengthThreshold)
+            if (readyForNextSlice())
             {
                 newSlice = spawnSlice(mapWidth, mapHeight);
                 activeSlices.Add(newSlice);
                 numSlicesGenerated++;
             }
-            print("Current number of slices generated" + numSlicesGenerated);
+            //print("Current number of slices generated" + numSlicesGenerated);
 
         }
-        else if (respawnSlices)
+        else if (respawnSlices && dormantSlices.Count > 0)
         {
-            // TODO: Add this logic
+            if (readyForNextSlice())
+            {
+                print("Spawning from dormant slices");
+                newSlice = dormantSlices.Dequeue();
+                activeSlices.Add(newSlice);
+                initializeSlice(newSlice, mapWidth, mapHeight);
+            }
         }
         else
         {
-            print("Out of new slices to generate and respawn is disabled. To enable respawning, check 'Respawn Slices'");
+            //print("Out of new slices to generate and respawn is disabled. To enable respawning, check 'Respawn Slices'");
         }
         return newSlice;
     }
@@ -107,30 +125,32 @@ public class DataCoreController : MonoBehaviour {
             {
                 despawnSlice(lastSlice, mapWidth, mapHeight);
                 activeSlices.RemoveAt(0);
+                dormantSlices.Enqueue(lastSlice);
+                print("Despawning slice! We now have " + dormantSlices.Count + " dormant slices");
             }
         }
     }
 
-    private void despawnSlice(CubeNode[,] slice, int width, int height)
-    {
-        mapOverSlice(slice, width, height, despawnNode);
-    }
+
 
     /**
     * A generic function that iterates over a slice and runs a void callback on each of the cubeNodes 
     */
-    private void mapOverSlice(CubeNode[,] slice, int width, int height, System.Action<CubeNode, int, int> callback)
+    private void mapOverSlice(CubeNode[,] slice, int width, int height, System.Action<CubeNode> callback)
     {
         for (int row = 0; row < width; row++)
         {
             for (int column = 0; column < height; column++)
             {
                 CubeNode node = slice[row, column];
-                callback(node, row, column);
+                callback(node);
             }
         }
     }
 
+    /* 
+    * Moves all active slices
+    */
     private void moveSlices()
     {
         for (int i = 0; i < activeSlices.Count; i++)
@@ -138,24 +158,6 @@ public class DataCoreController : MonoBehaviour {
             CubeNode[,] slice = activeSlices[i];
             moveSlice(slice, mapWidth, mapHeight);
         }
-    }
-
-    /**
-    * Moves the slice forward by the movementSpeed
-    */
-    private void moveSlice(CubeNode[,] slice, int width, int height)
-    {
-        mapOverSlice(slice, width, height, moveNode);
-    }
-
-    private void moveNode(CubeNode node, int row, int column)
-    {
-        node.getController().moveCube(movementSpeed);
-    }
-
-    private void despawnNode(CubeNode node, int row, int column)
-    {
-        node.despawn();
     }
 
     /**
@@ -174,8 +176,8 @@ public class DataCoreController : MonoBehaviour {
                 position.z = transform.position.z;
 
                 CubeNode cube = cubePool.Pop();
-                cube.initializeAt(position, despawnDistance);
-                lastCube = cube;
+                cube.initializeAt(position);
+                //lastCube = cube;
                 slice[row, column] = cube;
                 //print("initialized cube at row " + row + " and column " + column);
             }
@@ -183,11 +185,49 @@ public class DataCoreController : MonoBehaviour {
         return slice;
     }
 
+
+    /****** SLICE MAP FUNCTIONS ******/
+
+    /**
+    * Moves the slice forward by the movementSpeed
+    */
+    private void moveSlice(CubeNode[,] slice, int width, int height)
+    {
+        mapOverSlice(slice, width, height, moveNode);
+    }
+
+    private void despawnSlice(CubeNode[,] slice, int width, int height)
+    {
+        mapOverSlice(slice, width, height, despawnNode);
+    }
+
+    private void initializeSlice(CubeNode[,] slice, int width, int height)
+    {
+        mapOverSlice(slice, width, height, initializeNode);
+    }
+
+    /****** NODE MAP FUNCTIONS ******/
+
+    private void initializeNode(CubeNode node)
+    {
+        node.reinitialize();
+    }
+
+    private void moveNode(CubeNode node)
+    {
+        node.getController().moveCube(movementSpeed);
+    }
+
+    private void despawnNode(CubeNode node)
+    {
+        node.despawn();
+    }
+
     private class CubeNode
     {
         private GameObject cubeObj;
         private CubeController cubeController;
-
+        private Vector3 originalPos;
         public CubeNode(GameObject gameObj)
         {
             cubeObj = gameObj;
@@ -207,12 +247,11 @@ public class DataCoreController : MonoBehaviour {
         /**
          * Initializes the cube at row and column of the current gameObject's z position
          */
-        public void initializeAt(Vector3 pos, float despawnDistance)
+        public void initializeAt(Vector3 pos)
         {
+            originalPos = pos;
             cubeObj.transform.position = pos;
             renderCube();
-            //cubeController.movementSpeed = 10f;   // Debug, i dont wanna see it move until we're ready
-            //cubeController.despawnDistance = despawnDistance;
             cubeController.originalPos = pos; // We want it to respawn at this location and not where it was initalized in the pool
         }
 
@@ -261,6 +300,9 @@ public class DataCoreController : MonoBehaviour {
             return Vector3.Scale(cubeObj.GetComponent<BoxCollider>().size, cubeObj.transform.localScale);   // Not true size of cube without respect to local scale of it
         }
 
-        // todo: pass speed in so we can controll it from the datacore
+        public void reinitialize()
+        {
+            this.initializeAt(originalPos);
+        }
     }
 }
