@@ -69,10 +69,34 @@ public class DataCoreController : MonoBehaviour {
     void Update()
     {
         if (readyForNextSlice())
-            generateSliceAtBegining();
+        {
+            CubeNode[,] slice = generateSliceAtBegining();
+            applyBehaviorFilter(slice, mapWidth, mapHeight);
+        }
 
         despawnSlices();
         moveSlices();
+    }
+
+    private void applyBehaviorFilter(CubeNode[,] slice, int width, int height)
+    {
+        // For now just do the one plain one. Im tired, just want something dirty to see if it even works.
+        for (int row = 0; row < width; row++)
+        {
+            for (int column = 0; column < height; column++)
+            {
+                CubeNode node = slice[row, column];
+
+                if (row == 0 || row == width-1 || column == 0 || column == height - 1)
+                {
+                    node.spawn();
+                }
+                else
+                {
+                    node.despawn();
+                }
+            }
+        }
     }
 
     /**
