@@ -68,13 +68,15 @@ public class DataCoreController : MonoBehaviour {
 
     void Update()
     {
-        generateSliceAtBegining();
+        if (readyForNextSlice())
+            generateSliceAtBegining();
+
         despawnSlices();
         moveSlices();
     }
 
     /**
-    * Returns the z distance from the last generated slice and the this controller's position
+    * Returns whether we can generate another slice
     */
     private bool readyForNextSlice()
     {
@@ -86,25 +88,16 @@ public class DataCoreController : MonoBehaviour {
         CubeNode[,] newSlice = null;
         if (numSlicesGenerated < mapLength + numPaddingSlices)
         {
-            // Figure out whether it's time to spawn another one
-            if (readyForNextSlice())
-            {
-                newSlice = spawnSlice(mapWidth, mapHeight);
-                activeSlices.Add(newSlice);
-                numSlicesGenerated++;
-            }
-            //print("Current number of slices generated" + numSlicesGenerated);
-
+            newSlice = spawnSlice(mapWidth, mapHeight);
+            activeSlices.Add(newSlice);
+            numSlicesGenerated++;
         }
         else if (respawnSlices && dormantSlices.Count > 0)
         {
-            if (readyForNextSlice())
-            {
-                print("Spawning from dormant slices");
-                newSlice = dormantSlices.Dequeue();
-                activeSlices.Add(newSlice);
-                initializeSlice(newSlice, mapWidth, mapHeight);
-            }
+            print("Spawning from dormant slices");
+            newSlice = dormantSlices.Dequeue();
+            activeSlices.Add(newSlice);
+            initializeSlice(newSlice, mapWidth, mapHeight);
         }
         else
         {
@@ -130,8 +123,6 @@ public class DataCoreController : MonoBehaviour {
             }
         }
     }
-
-
 
     /**
     * A generic function that iterates over a slice and runs a void callback on each of the cubeNodes 
@@ -177,7 +168,6 @@ public class DataCoreController : MonoBehaviour {
 
                 CubeNode cube = cubePool.Pop();
                 cube.initializeAt(position);
-                //lastCube = cube;
                 slice[row, column] = cube;
                 //print("initialized cube at row " + row + " and column " + column);
             }
@@ -236,8 +226,6 @@ public class DataCoreController : MonoBehaviour {
             // On instantiation, we dont want to do anything with it.
             cubeObj.SetActive(false);
         }
-
-        //public float 
 
         public CubeController getController()
         {
