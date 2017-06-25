@@ -1,11 +1,12 @@
-# Lazer Cat Hero 
+# Digital Rush
 
-The year is 2175. Tensions in the south west pacific has inevitably caused the breakdown of all major governments across the globe. 
-With all countries withdrawing frantically from joint country programs, the International Space Station gets evacuated so fast that
-one fateful crew member has been left behind. Mylo the cat. 
-A hyper intelligent experimental kitty held in the void of space for fear of his lazer eyes being used for nefarious means.
+This is a unity endless flyer where you fly your awesome digital ship through a vast procedurally generated 
+digital landscape filled with dangerous data nodes. Try your skill and see how long you can last to beat your friends scores.
+Inspired as a blend of old school arcade games in tandem with modern endless runner games placed in a scifi neon digital world.
 
-Suddenly while the earth turns its eyes away from the heavens, a field of astroids comes hurtling straight for earth. 
-With no one else aware of the oncoming storm, 
-Mylo must rise to the challenge and utilize all his cunning to defend the planet he longs to return to. 
-Suffice it to say, the battle to come will have cat-astrophic circumstances.
+## Tech Used
+- Unity 5.6.1
+- Blender
+
+## Credits
+- Dis an Albert Chu joint 
