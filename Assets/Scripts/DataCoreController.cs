@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // This class will control where all the enemy nodes come from
-public class DataCoreController : MonoBehaviour {
+public class DataCoreController : MonoBehaviour
+{
     public float distanceBetweenSpawns = 2f;    // The amount of padding space between each prefab spawn. Assumes box colider on prefab for size calculations
     public float spawnUntilDistance = 50f;      // Will continuously spawn objects until the first one hits this distance away from spawn point
     public GameObject prefabToSpawn;
@@ -60,7 +61,7 @@ public class DataCoreController : MonoBehaviour {
         print("Took " + timeEnded + " seconds to generate this pool of " + cubePool.Count + " cubes");
 
         cubeDimensions = cubePool.Peek().getCubeDimensions();   // Use first cube as template of dimensions for all other cubes. Respect this assumption.
-        halfCubeDimensions = cubeDimensions/2;   // We use this value a lot. Just saving it for performance optimization
+        halfCubeDimensions = cubeDimensions / 2;   // We use this value a lot. Just saving it for performance optimization
         lengthThreshold = cubeDimensions.z + lengthPadding;   // The distance that the last slice must have traveled before we generate a new slice
 
         // Performance Hack: These calculations are used in spawning new slices. They're the same in each iteration and dont need to be repeated.
@@ -86,18 +87,6 @@ public class DataCoreController : MonoBehaviour {
     private void applyBehaviorFilter(CubeNode[,] slice)
     {
         mapOverSlice(slice, plainLevel);        // Eventually we will shuffle between different behavioral filters that have different chances of coming up
-    }
-
-    private void plainLevel(CubeNode node, int rowIndex, int columnIndex)
-    {
-        if (rowIndex == 0 || rowIndex == mapWidth - 1 || columnIndex == 0 || columnIndex == mapHeight - 1)
-        {
-            node.spawn();
-        }
-        else
-        {
-            node.despawn();
-        }
     }
 
     /**
@@ -133,11 +122,11 @@ public class DataCoreController : MonoBehaviour {
 
     private void despawnSlices()
     {
-        if(activeSlices.Count > 0)
+        if (activeSlices.Count > 0)
         {
             // Performance shortcut: Only evaluate the first slice for despawn. This is the one thats farthest along
             CubeNode[,] lastSlice = activeSlices[0];
-            CubeNode cubeFromFirstSlice = lastSlice[0,0];
+            CubeNode cubeFromFirstSlice = lastSlice[0, 0];
             bool reachedDespawnThreshold = cubeFromFirstSlice.getDistanceFrom(transform.position).z >= despawnDistance;
             if (reachedDespawnThreshold)
             {
@@ -154,12 +143,12 @@ public class DataCoreController : MonoBehaviour {
     */
     private void mapOverSlice(CubeNode[,] slice, System.Action<CubeNode, int, int> callback)
     {
-        for (int row = 0; row < mapWidth; row++)
+        for (int column = 0; column < mapWidth; column++)
         {
-            for (int column = 0; column < mapHeight; column++)
+            for (int row = 0; row < mapHeight; row++)
             {
-                CubeNode node = slice[row, column];
-                callback(node, row, column);
+                CubeNode node = slice[column, row];
+                callback(node, column, row);
             }
         }
     }
@@ -182,19 +171,19 @@ public class DataCoreController : MonoBehaviour {
     private CubeNode[,] spawnSlice()
     {
         CubeNode[,] slice = new CubeNode[mapWidth, mapHeight];
-        for (int row = 0; row < mapWidth; row++)
+        for (int column = 0; column < mapWidth; column++)
         {
-            for (int column = 0; column < mapHeight; column++)
+            for (int row = 0; row < mapHeight; row++)
             {
                 Vector3 position = new Vector3();
-                position.x = preCalcOffsetX + row * cubeDimensions.x + widthPadding * row;
-                position.y = preCalcOffsetY + column * cubeDimensions.y + heightPadding * column;
+                position.x = preCalcOffsetX + column * cubeDimensions.x + widthPadding * column;
+                position.y = preCalcOffsetY + row * cubeDimensions.y + heightPadding * row;
                 position.z = transform.position.z;
 
                 CubeNode cube = cubePool.Pop();
                 cube.initializeAt(position);
-                slice[row, column] = cube;
-                //print("initialized cube at row " + row + " and column " + column);
+                slice[column, row] = cube;
+                //print("initialized cube at column " + column + " and row " + row);
             }
         }
         return slice;
@@ -223,17 +212,50 @@ public class DataCoreController : MonoBehaviour {
 
     /****** NODE MAP FUNCTIONS ******/
 
-    private void initializeNode(CubeNode node, int rowIndex, int columnIndex)
+
+    private void plainLevel(CubeNode node, int columnIndex, int rowIndex)
+    {
+        if (columnIndex == 0)
+        {
+            node.spawn();
+            //node.getController().spawnLights(numLightsPerCube, CubeController.Orientation.Right);
+        }
+        else if (columnIndex == mapWidth - 1)
+        {
+            node.spawn();
+            //node.getController().spawnLights(numLightsPerCube, CubeController.Orientation.Left);
+        }
+        else if (rowIndex == 0)
+        {
+            node.spawn();
+            //node.despawn();
+            //node.getController().spawnLights(numLightsPerCube, CubeController.Orientation.Top);
+        }
+        else if (rowIndex == mapHeight - 1)
+        {
+            node.spawn();
+            //node.despawn();
+            node.getController().spawnLights(numLightsPerCube, CubeController.Orientation.Bottom);
+
+        }
+        else
+        {
+            node.renderCube(.05f);
+            //node.despawn();
+        }
+    }
+
+    private void initializeNode(CubeNode node, int columnIndex, int rowIndex)
     {
         node.reinitialize();
     }
 
-    private void moveNode(CubeNode node, int rowIndex, int columnIndex)
+    private void moveNode(CubeNode node, int columnIndex, int rowIndex)
     {
         node.getController().moveCube(movementSpeed);
     }
 
-    private void despawnNode(CubeNode node, int rowIndex, int columnIndex)
+    private void despawnNode(CubeNode node, int columnIndex, int rowIndex)
     {
         node.despawn();
     }
@@ -258,7 +280,7 @@ public class DataCoreController : MonoBehaviour {
         }
 
         /**
-         * Initializes the cube at row and column of the current gameObject's z position
+         * Initializes the cube at column and row of the current gameObject's z position
          */
         public void initializeAt(Vector3 pos)
         {
@@ -270,7 +292,7 @@ public class DataCoreController : MonoBehaviour {
 
         /**
         * Not quite the same as Vector3.Distance. This returns the distances on each axis
-        */ 
+        */
         public Vector3 getDistanceFrom(Vector3 pos)
         {
             return new Vector3(Mathf.Abs(cubeObj.transform.position.x - pos.x), Mathf.Abs(cubeObj.transform.position.y - pos.y), Mathf.Abs(cubeObj.transform.position.z - pos.z));
@@ -284,7 +306,7 @@ public class DataCoreController : MonoBehaviour {
         /**
          * Will render the cube based on a random chance (between 0-1) where 1 is 100% chance of render
          */
-        public void renderCube(float chancePercentage=1f)
+        public void renderCube(float chancePercentage = 1f)
         {
             //print("There is a " + (chancePercentage * 100) + "% chance that this cube will render");
             chancePercentage = Mathf.Clamp(chancePercentage, 0, 1); // Incase someone is being a dumb bum
