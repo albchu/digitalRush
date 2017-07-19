@@ -57,82 +57,38 @@ public class PlayerController : MonoBehaviour {
         if (Input.GetKey(KeyCode.W))    // Forward
         {
             movementDuringFrame = transform.up * Time.deltaTime * movementSpeed * dashModifier;
-            
-            // Rotation logic
-            if (Input.GetKeyDown(KeyCode.W) && atRestingRotation)
-            {
-                //print("recorded original rotation going right");
-                originalRotation = transform.rotation;  // Save the original rotation
-                rotationStartTime = Time.time;
-            }
+            rotateDown();
+            //// Rotation logic
+            //if (Input.GetKeyDown(KeyCode.W) && atRestingRotation)
+            //{
+            //    //print("recorded original rotation going right");
+            //    originalRotation = transform.rotation;  // Save the original rotation
+            //    rotationStartTime = Time.time;
+            //}
 
-            atRestingRotation = false;
-            restoringRotation = false;      // Disable restore so that it does not conflict with this movement
-            float rotateBudget = (transform.eulerAngles.x + maxRotateDegreesPitch) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
-            bool canStillRotate = Mathf.Clamp(rotateBudget, 0, 10) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
-            if (canStillRotate)     // Rotation clamping
-                transform.RotateAround(transform.position, Vector3.left, rotationIncrements * Time.deltaTime);
+            //atRestingRotation = false;
+            //restoringRotation = false;      // Disable restore so that it does not conflict with this movement
+            //float rotateBudget = (transform.eulerAngles.x + maxRotateDegreesPitch) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
+            //bool canStillRotate = Mathf.Clamp(rotateBudget, 0, 10) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
+            //if (canStillRotate)     // Rotation clamping
+            //    transform.RotateAround(transform.position, Vector3.left, rotationIncrements * Time.deltaTime);
         }
         if (Input.GetKey(KeyCode.S))   //Back
         {
             movementDuringFrame -= transform.up * Time.deltaTime * movementSpeed * dashModifier;
-
-
-            // Rotation logic
-            if (Input.GetKeyDown(KeyCode.S) && atRestingRotation)
-            {
-                //print("recorded original rotation going right");
-                originalRotation = transform.rotation;  // Save the original rotation
-                rotationStartTime = Time.time;
-            }
-
-            atRestingRotation = false;
-            restoringRotation = false;      // Disable restore so that it does not conflict with this movement
-            float rotateBudget = (transform.eulerAngles.x + maxRotateDegreesPitch) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
-            bool canStillRotate = Mathf.Clamp(rotateBudget, maxRotateDegreesPitch * 2 - 10, maxRotateDegreesPitch * 2) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
-            print("Euler" + transform.eulerAngles);
-            print("W's rotate budget" + rotateBudget);
-            if (canStillRotate)     // Rotation clamping
-                transform.RotateAround(transform.position, Vector3.left, -rotationIncrements * Time.deltaTime);
+            rotateUp();
         }
         if (Input.GetKey(KeyCode.D))   // Right
         {
             Vector3 right_angle = Vector3.Cross(transform.forward, Vector3.up);
             movementDuringFrame -= right_angle * Time.deltaTime * movementSpeed * dashModifier;
-
-            // Rotation logic
-            if (Input.GetKeyDown(KeyCode.D) && atRestingRotation)
-            {
-                //print("recorded original rotation going right");
-                originalRotation = transform.rotation;  // Save the original rotation
-                rotationStartTime = Time.time;
-            }
-
-            atRestingRotation = false;
-            restoringRotation = false;      // Disable restore so that it does not conflict with this movement
-            float rotateBudget = (transform.eulerAngles.z + maxRotateDegreesYaw) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
-            bool canStillRotate = Mathf.Clamp(rotateBudget, 0, 10) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
-            if (canStillRotate)     // Rotation clamping
-                transform.RotateAround(transform.position, Vector3.forward, -rotationIncrements * Time.deltaTime);
+            rotateRight();
         }
         if (Input.GetKey(KeyCode.A))   // Left
         {
             Vector3 right_angle = Vector3.Cross(transform.forward, Vector3.up);
             movementDuringFrame += right_angle * Time.deltaTime * movementSpeed * dashModifier;
-
-            // Rotation logic
-            if (Input.GetKeyDown(KeyCode.A) && atRestingRotation)
-            {
-                //print("recorded original rotation going left");
-                originalRotation = transform.rotation;  // Save the original rotation
-                rotationStartTime = Time.time;
-            }
-            atRestingRotation = false;
-            restoringRotation = false;      // Disable restore so that it does not conflict with this movement
-            float rotateBudget = (transform.eulerAngles.z + maxRotateDegreesYaw) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
-            bool canStillRotate = Mathf.Clamp(rotateBudget, maxRotateDegreesYaw * 2 - 10, maxRotateDegreesYaw * 2) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
-            if (canStillRotate)     // Rotation clamping
-                transform.RotateAround(transform.position, Vector3.forward, rotationIncrements * Time.deltaTime);
+            rotateLeft();
         }
         playerCamera.position += movementDuringFrame; // Move the camera the same as the player
         transform.position += movementDuringFrame;      // Move the player
@@ -155,4 +111,59 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
+    // Rotation Logics
+    void rotateDown()
+    {
+        if (Input.GetKeyDown(KeyCode.W) && atRestingRotation)
+            saveOriginalRotation();
+        float rotateBudget = (transform.eulerAngles.x + maxRotateDegreesPitch) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
+        bool canStillRotate = Mathf.Clamp(rotateBudget, 0, 10) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
+        conditionallyRotate(canStillRotate, Vector3.left);
+    }
+
+    void rotateUp()
+    {
+        if (Input.GetKeyDown(KeyCode.S) && atRestingRotation)
+            saveOriginalRotation();
+        float rotateBudget = (transform.eulerAngles.x + maxRotateDegreesPitch) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
+        bool canStillRotate = Mathf.Clamp(rotateBudget, maxRotateDegreesPitch * 2 - 10, maxRotateDegreesPitch * 2) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
+        conditionallyRotate(canStillRotate, Vector3.right);
+    }
+
+    void rotateRight()
+    {
+        if (Input.GetKeyDown(KeyCode.D) && atRestingRotation)
+            saveOriginalRotation();
+
+        float rotateBudget = (transform.eulerAngles.z + maxRotateDegreesYaw) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
+        bool canStillRotate = Mathf.Clamp(rotateBudget, 0, 10) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
+        conditionallyRotate(canStillRotate, Vector3.back);
+    }
+
+    void rotateLeft()
+    {
+        if (Input.GetKeyDown(KeyCode.A) && atRestingRotation)
+            saveOriginalRotation();
+
+        float rotateBudget = (transform.eulerAngles.z + maxRotateDegreesYaw) % 360f;   // Normalizes rotation and skews scale so that resting position is at MaxRotateDegrees
+        bool canStillRotate = Mathf.Clamp(rotateBudget, maxRotateDegreesYaw * 2 - 10, maxRotateDegreesYaw * 2) != rotateBudget;     // Value can be missed if we wait for an exact value. Limiting rotation when the value hits a range close to the limit
+        conditionallyRotate(canStillRotate, Vector3.forward);
+    }
+
+    /**
+     * Will only rotate by the vector and increment if the first boolean value is true
+     */ 
+    void conditionallyRotate(bool canStillRotate, Vector3 rotVec)
+    {
+        atRestingRotation = false;
+        restoringRotation = false;      // Disable restore so that it does not conflict with this rotation
+        if (canStillRotate)     // Rotation clamping
+            transform.RotateAround(transform.position, rotVec, rotationIncrements * Time.deltaTime);
+    }
+
+    void saveOriginalRotation()
+    {
+        originalRotation = transform.rotation;  // Save the original rotation
+        rotationStartTime = Time.time;
+    }
 }

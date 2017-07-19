@@ -8,15 +8,20 @@ ModelImporter:
     100000: Body
     100002: //RootNode
     100004: Wings
+    100006: Emission_Core
     400000: Body
     400002: //RootNode
     400004: Wings
+    400006: Emission_Core
     2300000: Body
     2300002: Wings
+    2300004: Emission_Core
     3300000: Body
     3300002: Wings
+    3300004: Emission_Core
     4300000: Wings
     4300002: Body
+    4300004: Emission_Core
     7400000: Default Take
     9500000: //RootNode
   materials:
