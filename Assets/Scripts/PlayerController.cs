@@ -33,7 +33,8 @@ public class PlayerController : MonoBehaviour {
 
     void Update()
     {
-        movement();
+        if(GameManager.currentState == GameState.State.Play)
+            movement();
     }
 
     void movement()

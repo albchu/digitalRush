@@ -74,14 +74,17 @@ public class DataCoreController : MonoBehaviour
 
     void Update()
     {
-        if (readyForNextSlice())
+        if (GameManager.currentState == GameState.State.Play)
         {
-            CubeNode[,] slice = generateSliceAtBegining();
-            applyBehaviorFilter(slice);
-        }
+            if (readyForNextSlice())
+            {
+                CubeNode[,] slice = generateSliceAtBegining();
+                applyBehaviorFilter(slice);
+            }
 
-        despawnSlices();
-        moveSlices();
+            despawnSlices();
+            moveSlices();
+        }
     }
 
     private void applyBehaviorFilter(CubeNode[,] slice)
