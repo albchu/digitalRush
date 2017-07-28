@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 798cbea9e9f08e9419a0d8042ed9ff46
+timeCreated: 1501134002
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Qanelas Soft DEMO
+  fontNames:
+  - Qanelas Soft DEMO
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
